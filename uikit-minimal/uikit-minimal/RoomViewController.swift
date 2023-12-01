@@ -18,8 +18,8 @@ import UIKit
 import LiveKit
 
 // enter your own LiveKit server url and token
-let url = "ws://localhost:7880"
-let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTQwMDc3MjEsImlzcyI6IkFQSTdSTVB5ZWdUN29lSCIsIm5iZiI6MTY1MTQxNTcyMSwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoicm9vbTEiLCJyb29tSm9pbiI6dHJ1ZX19.tlpPu_ejnmAfRsrNhpWnsoQbh_J6wd2ExZpPwkE5ZBw"
+let url = "wss://stephen-dzasntmt.livekit.cloud"
+let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQwMzA3MzgsImlzcyI6IkFQSVRKOEJyc3M3U2FubyIsIm5hbWUiOiJWYXN5bDEiLCJuYmYiOjE3MDE0Mzg3MzgsInN1YiI6IlZhc3lsMSIsInZpZGVvIjp7InJvb20iOiJkZW1vMTIwMSIsInJvb21Kb2luIjp0cnVlfX0.VRJU915vrdYLvnay0FQAjqFUsRZ8wxTC8mct6zwZ6d0"
 
 class RoomViewController: UIViewController {
 
@@ -87,6 +87,7 @@ class RoomViewController: UIViewController {
         }
     }
 
+    @MainActor
     private func updateNavigationBar() {
 
         self.navigationItem.title = nil
@@ -126,7 +127,25 @@ class RoomViewController: UIViewController {
             adaptiveStream: true,
             dynacast: true
         )
+        
+        // todo
+        room.riotDelay = 3.0 // 0.0 100.0
 
+        // todo
+        Task {
+            do {
+                try await room.connect(url: url, token: token, roomOptions: roomOptions)
+            } catch {
+                print("failed to connect with error: \(error)")
+                updateNavigationBar()
+                return
+            }
+            
+            print("connected to server version: \(String(describing: room.serverVersion))")
+            setParticipants()
+        }
+        // todo OLD
+        #if false
         room.connect(url, token, roomOptions: roomOptions).then { [weak self] room in
             guard let self = self else { return }
             print("connected to server version: \(String(describing: room.serverVersion))")
@@ -137,17 +156,26 @@ class RoomViewController: UIViewController {
                 self.updateNavigationBar()
             }
         }
+        #endif
     }
 
     @objc func onTapDisconnect(sender: UIBarButtonItem) {
 
         navigationItem.leftBarButtonItem?.isEnabled = false
 
+        // todo
+        Task {
+            await room.disconnect()
+            updateNavigationBar()
+        }
+        // todo OLD
+        #if false
         room.disconnect().then {
             DispatchQueue.main.async {
                 self.updateNavigationBar()
             }
         }
+        #endif
     }
 
     @objc func onTapShuffle(sender: UIBarButtonItem) {

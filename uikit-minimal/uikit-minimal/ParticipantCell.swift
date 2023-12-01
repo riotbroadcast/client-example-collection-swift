@@ -57,7 +57,7 @@ class ParticipantCell: UICollectionViewCell {
                 // listen to events
                 participant.add(delegate: self)
                 setFirstVideoTrack()
-                labelView.text = "\(participant.identity) CELL# \(cellId)"
+                labelView.text = "\(String(describing: participant.identity)) CELL# \(cellId)"
 
                 // make sure the cell will call layoutSubviews()
                 setNeedsLayout()
