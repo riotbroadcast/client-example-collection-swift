@@ -129,7 +129,7 @@ class RoomViewController: UIViewController {
         )
         
         // todo
-        room.riotDelay = 3.0 // 0.0 100.0
+        room.riotDelay = 0.0 // 0.0 3.0 100.0
 
         // todo
         Task {
