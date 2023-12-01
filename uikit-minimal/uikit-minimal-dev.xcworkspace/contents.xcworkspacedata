@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:../../GitHub/client-sdk-swift">
+      location = "group:../../client-sdk-swift">
    </FileRef>
    <FileRef
       location = "group:uikit-minimal.xcodeproj">
