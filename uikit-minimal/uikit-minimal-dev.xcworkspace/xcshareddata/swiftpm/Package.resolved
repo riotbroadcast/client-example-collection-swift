@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/riotbroadcast/webrtc-xcframework-static.git",
         "state": {
           "branch": null,
-          "revision": "78de68ad2dc1f73d0e6ec7282e0d23df40ad3eeb",
-          "version": "114.5735.9-riot-4"
+          "revision": "bbf04e5cb6e08aae978d5a0227992d8c447b3935",
+          "version": "114.5735.9-riot-5"
         }
       }
     ]
