@@ -51,10 +51,11 @@ class RoomViewController: UIViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
 
-        self.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { [weak self] _ in
-            guard let self = self else { return }
-            self.reComputeVideoViewEnabled()
-        })
+        // todo ?
+        //self.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { [weak self] _ in
+        //    guard let self = self else { return }
+        //    self.reComputeVideoViewEnabled()
+        //})
     }
 
     required init?(coder: NSCoder) {
@@ -71,11 +72,19 @@ class RoomViewController: UIViewController {
         _delayLabelView.text = "Delay: \(delay)s"
         self.view.setNeedsLayout()
     }
-    
+
     private func updateSilenceLabel() {
-        // todo
-        _silenceLabelView.text = "Silence: NNs" // todo
-        self.view.setNeedsLayout()
+        var value = ""
+        if let silenceRemaining = room.riotSilenceRemaining {
+            value = "\(silenceRemaining)s"
+        } else {
+            value = "-"
+        }
+        let oldText = _silenceLabelView.text
+        _silenceLabelView.text = "Silence: \(value)"
+        if oldText != _silenceLabelView.text {
+            self.view.setNeedsLayout()
+        }
     }
     
     private func changeDelay(_ delta: TimeInterval) {
