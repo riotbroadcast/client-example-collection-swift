@@ -22,6 +22,10 @@ let url = "wss://stephen-dzasntmt.livekit.cloud"
 let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQwMzA3MzgsImlzcyI6IkFQSVRKOEJyc3M3U2FubyIsIm5hbWUiOiJWYXN5bDEiLCJuYmYiOjE3MDE0Mzg3MzgsInN1YiI6IlZhc3lsMSIsInZpZGVvIjp7InJvb20iOiJkZW1vMTIwMSIsInJvb21Kb2luIjp0cnVlfX0.VRJU915vrdYLvnay0FQAjqFUsRZ8wxTC8mct6zwZ6d0"
 
 class RoomViewController: UIViewController {
+    private var _plusButtonView: UIButton!
+    private var _minusButtonView: UIButton!
+    private var _delayLabelView: UILabel!
+    private var _silenceLabelView: UILabel!
 
     private lazy var room: Room = {
         Room(delegate: self)
@@ -61,12 +65,31 @@ class RoomViewController: UIViewController {
         timer?.invalidate()
         timer = nil
     }
+    
+    private func updateDelayLabel() {
+        let delay = self.room.riotDelay
+        _delayLabelView.text = "Delay: \(delay)s"
+        self.view.setNeedsLayout()
+    }
+    
+    private func updateSilenceLabel() {
+        // todo
+        _silenceLabelView.text = "Silence: NNs" // todo
+        self.view.setNeedsLayout()
+    }
+    
+    private func changeDelay(_ delta: TimeInterval) {
+        let oldDelay = self.room.riotDelay
+        self.room.riotDelay = max(0, oldDelay + delta)
+        updateDelayLabel()
+    }
 
-    override func viewWillLayoutSubviews() {
-        print("viewWillLayoutSubviews...")
-        super.viewWillLayoutSubviews()
-        collectionView.frame = view.bounds
-        collectionView.collectionViewLayout.invalidateLayout()
+    @objc private func handlePlus(_ sender: AnyObject) {
+        changeDelay(+1.0)
+    }
+
+    @objc private func handleMinus(_ sender: AnyObject) {
+        changeDelay(-1.0)
     }
 
     override func loadView() {
@@ -77,6 +100,64 @@ class RoomViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         updateNavigationBar()
+
+        _plusButtonView = UIButton(type: .roundedRect)
+        _plusButtonView.backgroundColor = .green
+        _plusButtonView.setTitle("+", for: .normal)
+        _plusButtonView.addTarget(self, action: #selector(handlePlus(_:)), for: .touchUpInside)
+        self.view.addSubview(_plusButtonView)
+
+        _minusButtonView = UIButton(type: .roundedRect)
+        _minusButtonView.backgroundColor = .orange
+        _minusButtonView.setTitle("-", for: .normal)
+        _minusButtonView.addTarget(self, action: #selector(handleMinus(_:)), for: .touchUpInside)
+        self.view.addSubview(_minusButtonView)
+        
+        _delayLabelView = UILabel(frame: .zero)
+        _delayLabelView.backgroundColor = .darkGray
+        _delayLabelView.textColor = .white
+        self.view.addSubview(_delayLabelView)
+
+        _silenceLabelView = UILabel(frame: .zero)
+        _silenceLabelView.backgroundColor = .darkGray
+        _silenceLabelView.textColor = .white
+        self.view.addSubview(_silenceLabelView)
+
+        updateDelayLabel()
+        updateSilenceLabel()
+        
+        Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
+            self.updateSilenceLabel()
+        }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        
+        collectionView.frame = view.bounds
+        collectionView.collectionViewLayout.invalidateLayout()
+        
+        var plusButtonViewFrame = CGRect.zero
+        plusButtonViewFrame.size = CGSize(width: 100, height: 50)
+        plusButtonViewFrame.origin.x = 50
+        plusButtonViewFrame.origin.y = view.bounds.maxY - 100 - plusButtonViewFrame.size.height
+        _plusButtonView.frame = plusButtonViewFrame
+
+        var minusButtonViewFrame = plusButtonViewFrame
+        minusButtonViewFrame.origin.x = view.bounds.maxX - plusButtonViewFrame.origin.x - minusButtonViewFrame.size.width
+        _minusButtonView.frame = minusButtonViewFrame
+        
+        var delayLabelViewFrame = CGRect.zero
+        delayLabelViewFrame.size = _delayLabelView.intrinsicContentSize
+        delayLabelViewFrame.origin.x = plusButtonViewFrame.origin.x
+        delayLabelViewFrame.origin.y = plusButtonViewFrame.origin.y - 20 - delayLabelViewFrame.size.height
+        _delayLabelView.frame = delayLabelViewFrame
+        
+        var silenceLabelViewFrame = CGRect.zero
+        silenceLabelViewFrame.size = _silenceLabelView.intrinsicContentSize
+        silenceLabelViewFrame.origin.x = view.bounds.maxX - delayLabelViewFrame.origin.x - silenceLabelViewFrame.size.width
+        silenceLabelViewFrame.origin.y = plusButtonViewFrame.origin.y - 20 - silenceLabelViewFrame.size.height
+        _silenceLabelView.frame = silenceLabelViewFrame
     }
 
     private func setParticipants() {
@@ -128,10 +209,6 @@ class RoomViewController: UIViewController {
             dynacast: true
         )
         
-        // todo
-        room.riotDelay = 0.0 // 0.0 3.0 100.0
-
-        // todo
         Task {
             do {
                 try await room.connect(url: url, token: token, roomOptions: roomOptions)
@@ -144,38 +221,16 @@ class RoomViewController: UIViewController {
             print("connected to server version: \(String(describing: room.serverVersion))")
             setParticipants()
         }
-        // todo OLD
-        #if false
-        room.connect(url, token, roomOptions: roomOptions).then { [weak self] room in
-            guard let self = self else { return }
-            print("connected to server version: \(String(describing: room.serverVersion))")
-            self.setParticipants()
-        }.catch { error in
-            print("failed to connect with error: \(error)")
-            DispatchQueue.main.async {
-                self.updateNavigationBar()
-            }
-        }
-        #endif
     }
 
     @objc func onTapDisconnect(sender: UIBarButtonItem) {
 
         navigationItem.leftBarButtonItem?.isEnabled = false
 
-        // todo
         Task {
             await room.disconnect()
             updateNavigationBar()
         }
-        // todo OLD
-        #if false
-        room.disconnect().then {
-            DispatchQueue.main.async {
-                self.updateNavigationBar()
-            }
-        }
-        #endif
     }
 
     @objc func onTapShuffle(sender: UIBarButtonItem) {

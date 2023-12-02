@@ -31,12 +31,14 @@ class ParticipantCell: UICollectionViewCell {
         r.backgroundColor = .darkGray
         r.clipsToBounds = true
         r.debugMode = true
+        r.isHidden = true // todo ?
         return r
     }()
 
     public let labelView: UILabel = {
         let r = UILabel()
         r.textColor = .white
+        r.isHidden = true // todo ?
         return r
     }()
 
@@ -108,8 +110,11 @@ class ParticipantCell: UICollectionViewCell {
     }
 
     private func setFirstVideoTrack() {
+        // todo ?
+        #if false
         let track = participant?.videoTracks.first?.track as? VideoTrack
         self.videoView.track = track
+        #endif
     }
 }
 
