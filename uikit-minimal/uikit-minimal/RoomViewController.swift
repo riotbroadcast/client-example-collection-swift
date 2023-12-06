@@ -21,6 +21,10 @@ import LiveKit
 let url = "wss://stephen-dzasntmt.livekit.cloud"
 let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQwMzA3MzgsImlzcyI6IkFQSVRKOEJyc3M3U2FubyIsIm5hbWUiOiJWYXN5bDEiLCJuYmYiOjE3MDE0Mzg3MzgsInN1YiI6IlZhc3lsMSIsInZpZGVvIjp7InJvb20iOiJkZW1vMTIwMSIsInJvb21Kb2luIjp0cnVlfX0.VRJU915vrdYLvnay0FQAjqFUsRZ8wxTC8mct6zwZ6d0"
 
+fileprivate let kIceServerUrl = "turn:turn.riotbroadcast.com:3478"
+fileprivate let kIceServerUsername = "riotbroadcast"
+fileprivate let kIceServerCredential = "wormy12345"
+
 class RoomViewController: UIViewController {
     private var _plusButtonView: UIButton!
     private var _minusButtonView: UIButton!
@@ -213,14 +217,21 @@ class RoomViewController: UIViewController {
 
         navigationItem.leftBarButtonItem?.isEnabled = false
 
+        let connectOptions = ConnectOptions(
+            iceServers: [
+                IceServer(
+                    urls: [kIceServerUrl],
+                    username: kIceServerUsername,
+                    credential: kIceServerCredential)])
+
         let roomOptions = RoomOptions(
             adaptiveStream: true,
             dynacast: true
         )
-        
+
         Task {
             do {
-                try await room.connect(url: url, token: token, roomOptions: roomOptions)
+                try await room.connect(url: url, token: token, connectOptions: connectOptions, roomOptions: roomOptions)
             } catch {
                 print("failed to connect with error: \(error)")
                 updateNavigationBar()
