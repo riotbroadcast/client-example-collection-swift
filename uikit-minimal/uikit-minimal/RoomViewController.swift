@@ -217,12 +217,12 @@ class RoomViewController: UIViewController {
 
         navigationItem.leftBarButtonItem?.isEnabled = false
 
-        let connectOptions = ConnectOptions(
-            iceServers: [
-                IceServer(
-                    urls: [kIceServerUrl],
-                    username: kIceServerUsername,
-                    credential: kIceServerCredential)])
+        //let connectOptions = ConnectOptions(
+        //    iceServers: [
+        //        IceServer(
+        //            urls: [kIceServerUrl],
+        //            username: kIceServerUsername,
+        //            credential: kIceServerCredential)])
 
         let roomOptions = RoomOptions(
             adaptiveStream: true,
@@ -231,7 +231,7 @@ class RoomViewController: UIViewController {
 
         Task {
             do {
-                try await room.connect(url: url, token: token, connectOptions: connectOptions, roomOptions: roomOptions)
+                try await room.connect(url: url, token: token, connectOptions: nil, roomOptions: roomOptions)
             } catch {
                 print("failed to connect with error: \(error)")
                 updateNavigationBar()
