@@ -19,8 +19,7 @@ import LiveKit
 
 // enter your own LiveKit server url and token
 let url = "wss://stephen-dzasntmt.livekit.cloud"
-let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI1NTE4MjksImlzcyI6IkFQSUF6Rm52aG5GenZFZSIsIm5iZiI6MTcwMTk0NzAyOSwic3ViIjoiVmFzeWwiLCJ2aWRlbyI6eyJjYW5QdWJsaXNoIjp0cnVlLCJjYW5QdWJsaXNoRGF0YSI6dHJ1ZSwiY2FuU3Vic2NyaWJlIjp0cnVlLCJyb29tIjoicmlvdCIsInJvb21Kb2luIjp0cnVlfX0.9yfs3Q3WAq2qBEgODtbyevlJGy1YGJMGgWWvqGFcMJk"
-//let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQwMzA3MzgsImlzcyI6IkFQSVRKOEJyc3M3U2FubyIsIm5hbWUiOiJWYXN5bDEiLCJuYmYiOjE3MDE0Mzg3MzgsInN1YiI6IlZhc3lsMSIsInZpZGVvIjp7InJvb20iOiJkZW1vMTIwMSIsInJvb21Kb2luIjp0cnVlfX0.VRJU915vrdYLvnay0FQAjqFUsRZ8wxTC8mct6zwZ6d0"
+let token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjYyMjk2ODg2NjcsImlzcyI6IkFQSUF6Rm52aG5GenZFZSIsIm5iZiI6MTcxMjIyNTgzNywic3ViIjoidG9rZW44YSIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJyaW90Iiwicm9vbUpvaW4iOnRydWV9fQ.rerkpRFuRffTFkHVRduFXkhCvayt-VtdN0YF3mmhyVo"
 
 fileprivate let kIceServerUrl = "turn:turn.riotbroadcast.com:3478"
 fileprivate let kIceServerUsername = "riotbroadcast"
@@ -71,7 +70,7 @@ class RoomViewController: UIViewController {
         timer?.invalidate()
         timer = nil
     }
-    
+
     private func updateDelayLabel() {
         let delay = self.room.riotDelay
         _delayLabelView.text = "Delay: \(delay)s"
@@ -91,7 +90,7 @@ class RoomViewController: UIViewController {
             self.view.setNeedsLayout()
         }
     }
-    
+
     private func changeDelay(_ delta: TimeInterval) {
         let oldDelay = self.room.riotDelay
         self.room.riotDelay = max(0, oldDelay + delta)
@@ -126,7 +125,7 @@ class RoomViewController: UIViewController {
         _minusButtonView.setTitle("-", for: .normal)
         _minusButtonView.addTarget(self, action: #selector(handleMinus(_:)), for: .touchUpInside)
         self.view.addSubview(_minusButtonView)
-        
+
         _delayLabelView = UILabel(frame: .zero)
         _delayLabelView.backgroundColor = .darkGray
         _delayLabelView.textColor = .white
@@ -139,7 +138,7 @@ class RoomViewController: UIViewController {
 
         updateDelayLabel()
         updateSilenceLabel()
-        
+
         Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
             self.updateSilenceLabel()
         }
@@ -147,10 +146,10 @@ class RoomViewController: UIViewController {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        
+
         collectionView.frame = view.bounds
         collectionView.collectionViewLayout.invalidateLayout()
-        
+
         var plusButtonViewFrame = CGRect.zero
         plusButtonViewFrame.size = CGSize(width: 100, height: 50)
         plusButtonViewFrame.origin.x = 50
@@ -160,13 +159,13 @@ class RoomViewController: UIViewController {
         var minusButtonViewFrame = plusButtonViewFrame
         minusButtonViewFrame.origin.x = view.bounds.maxX - plusButtonViewFrame.origin.x - minusButtonViewFrame.size.width
         _minusButtonView.frame = minusButtonViewFrame
-        
+
         var delayLabelViewFrame = CGRect.zero
         delayLabelViewFrame.size = _delayLabelView.intrinsicContentSize
         delayLabelViewFrame.origin.x = plusButtonViewFrame.origin.x
         delayLabelViewFrame.origin.y = plusButtonViewFrame.origin.y - 20 - delayLabelViewFrame.size.height
         _delayLabelView.frame = delayLabelViewFrame
-        
+
         var silenceLabelViewFrame = CGRect.zero
         silenceLabelViewFrame.size = _silenceLabelView.intrinsicContentSize
         silenceLabelViewFrame.origin.x = view.bounds.maxX - delayLabelViewFrame.origin.x - silenceLabelViewFrame.size.width
@@ -238,7 +237,7 @@ class RoomViewController: UIViewController {
                 updateNavigationBar()
                 return
             }
-            
+
             print("connected to server version: \(String(describing: room.serverVersion))")
             setParticipants()
         }
@@ -263,9 +262,16 @@ class RoomViewController: UIViewController {
 }
 
 extension RoomViewController: RoomDelegate {
+    func room(_ room: Room, didConnect isReconnect: Bool) {
+        NSLog("%@", "[RoomDelegate] didConnect")
+    }
+
+    func room(_ room: Room, didDisconnect error: Error?) {
+        NSLog("%@", "[RoomDelegate] didDisconnect")
+    }
 
     func room(_ room: Room, didUpdate connectionState: ConnectionState, oldValue: ConnectionState) {
-        print("connection state did update")
+        NSLog("%@", "[RoomDelegate] didUpdate connectionState: \(oldValue) -> \(connectionState)")
         DispatchQueue.main.async {
             if case .disconnected = connectionState {
                 self.remoteParticipants = []
@@ -284,6 +290,10 @@ extension RoomViewController: RoomDelegate {
     func room(_ room: Room, participantDidLeave participant: RemoteParticipant) {
         print("participant did leave")
         setParticipants()
+    }
+
+    func room(_ room: Room, participant: Participant, didUpdate connectionQuality: ConnectionQuality) {
+        NSLog("%@", "[RoomDelegate] didUpdate connectionQuality: \(connectionQuality)")
     }
 }
 
