@@ -369,7 +369,7 @@
 			repositoryURL = "https://github.com/riotbroadcast/client-sdk-swift.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.9.13;
+				minimumVersion = 2.0.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
