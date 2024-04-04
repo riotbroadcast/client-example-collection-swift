@@ -18,10 +18,19 @@ import LiveKit
 import UIKit
 
 // enter your own LiveKit server url and token
-let url = "ws://localhost:7880"
-let token = "your token"
+let url = "wss://stephen-dzasntmt.livekit.cloud"
+let token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjYyMjk2ODg2NjcsImlzcyI6IkFQSUF6Rm52aG5GenZFZSIsIm5iZiI6MTcxMjIyNTgzNywic3ViIjoidG9rZW44YSIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJyaW90Iiwicm9vbUpvaW4iOnRydWV9fQ.rerkpRFuRffTFkHVRduFXkhCvayt-VtdN0YF3mmhyVo"
+
+fileprivate let kIceServerUrl = "turn:turn.riotbroadcast.com:3478"
+fileprivate let kIceServerUsername = "riotbroadcast"
+fileprivate let kIceServerCredential = "wormy12345"
 
 class RoomViewController: UIViewController {
+    private var _plusButtonView: UIButton!
+    private var _minusButtonView: UIButton!
+    private var _delayLabelView: UILabel!
+    private var _silenceLabelView: UILabel!
+
     private lazy var room: Room = .init(delegate: self)
 
     private lazy var collectionView: UICollectionView = {
@@ -44,10 +53,11 @@ class RoomViewController: UIViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
 
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { [weak self] _ in
-            guard let self else { return }
-            self.reComputeVideoViewEnabled()
-        })
+        // todo ?
+        // timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { [weak self] _ in
+        //     guard let self else { return }
+        //     self.reComputeVideoViewEnabled()
+        // })
     }
 
     @available(*, unavailable)
@@ -60,12 +70,39 @@ class RoomViewController: UIViewController {
         timer = nil
     }
 
-    override func viewWillLayoutSubviews() {
-        print("viewWillLayoutSubviews...")
-        super.viewWillLayoutSubviews()
-        collectionView.frame = view.bounds
-        collectionView.collectionViewLayout.invalidateLayout()
+    private func updateDelayLabel() {
+        let delay = self.room.riotDelay
+        _delayLabelView.text = "Delay: \(delay)s"
+        self.view.setNeedsLayout()
     }
+
+    private func updateSilenceLabel() {
+        var value = ""
+        if let silenceRemaining = room.riotSilenceRemaining {
+            value = "\(silenceRemaining)s"
+        } else {
+            value = "-"
+        }
+        let oldText = _silenceLabelView.text
+        _silenceLabelView.text = "Silence: \(value)"
+        if oldText != _silenceLabelView.text {
+            self.view.setNeedsLayout()
+        }
+    }
+
+    private func changeDelay(_ delta: TimeInterval) {
+        let oldDelay = self.room.riotDelay
+        self.room.riotDelay = max(0, oldDelay + delta)
+        updateDelayLabel()
+    }
+
+    @objc private func handlePlus(_ sender: AnyObject) {
+        changeDelay(+1.0)
+    }
+
+    @objc private func handleMinus(_ sender: AnyObject) {
+        changeDelay(-1.0)
+     }
 
     override func loadView() {
         super.loadView()
@@ -77,6 +114,64 @@ class RoomViewController: UIViewController {
         Task {
             await updateNavigationBar()
         }
+
+        _plusButtonView = UIButton(type: .roundedRect)
+        _plusButtonView.backgroundColor = .green
+        _plusButtonView.setTitle("+", for: .normal)
+        _plusButtonView.addTarget(self, action: #selector(handlePlus(_:)), for: .touchUpInside)
+        self.view.addSubview(_plusButtonView)
+
+        _minusButtonView = UIButton(type: .roundedRect)
+        _minusButtonView.backgroundColor = .orange
+        _minusButtonView.setTitle("-", for: .normal)
+        _minusButtonView.addTarget(self, action: #selector(handleMinus(_:)), for: .touchUpInside)
+        self.view.addSubview(_minusButtonView)
+
+        _delayLabelView = UILabel(frame: .zero)
+        _delayLabelView.backgroundColor = .darkGray
+        _delayLabelView.textColor = .white
+        self.view.addSubview(_delayLabelView)
+
+        _silenceLabelView = UILabel(frame: .zero)
+        _silenceLabelView.backgroundColor = .darkGray
+        _silenceLabelView.textColor = .white
+        self.view.addSubview(_silenceLabelView)
+
+        updateDelayLabel()
+        updateSilenceLabel()
+
+        Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
+            self.updateSilenceLabel()
+        }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+
+        collectionView.frame = view.bounds
+        collectionView.collectionViewLayout.invalidateLayout()
+
+        var plusButtonViewFrame = CGRect.zero
+        plusButtonViewFrame.size = CGSize(width: 100, height: 50)
+        plusButtonViewFrame.origin.x = 50
+        plusButtonViewFrame.origin.y = view.bounds.maxY - 100 - plusButtonViewFrame.size.height
+        _plusButtonView.frame = plusButtonViewFrame
+
+        var minusButtonViewFrame = plusButtonViewFrame
+        minusButtonViewFrame.origin.x = view.bounds.maxX - plusButtonViewFrame.origin.x - minusButtonViewFrame.size.width
+        _minusButtonView.frame = minusButtonViewFrame
+
+        var delayLabelViewFrame = CGRect.zero
+        delayLabelViewFrame.size = _delayLabelView.intrinsicContentSize
+        delayLabelViewFrame.origin.x = plusButtonViewFrame.origin.x
+        delayLabelViewFrame.origin.y = plusButtonViewFrame.origin.y - 20 - delayLabelViewFrame.size.height
+        _delayLabelView.frame = delayLabelViewFrame
+
+        var silenceLabelViewFrame = CGRect.zero
+        silenceLabelViewFrame.size = _silenceLabelView.intrinsicContentSize
+        silenceLabelViewFrame.origin.x = view.bounds.maxX - delayLabelViewFrame.origin.x - silenceLabelViewFrame.size.width
+        silenceLabelViewFrame.origin.y = plusButtonViewFrame.origin.y - 20 - silenceLabelViewFrame.size.height
+        _silenceLabelView.frame = silenceLabelViewFrame
     }
 
     @MainActor
@@ -120,6 +215,13 @@ class RoomViewController: UIViewController {
     @objc func onTapConnect(sender _: UIBarButtonItem) {
         navigationItem.leftBarButtonItem?.isEnabled = false
 
+        //let connectOptions = ConnectOptions(
+        //    iceServers: [
+        //        IceServer(
+        //            urls: [kIceServerUrl],
+        //            username: kIceServerUsername,
+        //            credential: kIceServerCredential)])
+
         let roomOptions = RoomOptions(
             adaptiveStream: true,
             dynacast: true
@@ -155,8 +257,16 @@ class RoomViewController: UIViewController {
 }
 
 extension RoomViewController: RoomDelegate {
-    func room(_: Room, didUpdateConnectionState connectionState: ConnectionState, from _: ConnectionState) {
-        print("connection state did update")
+    func roomDidConnect(_ room: Room) {
+        NSLog("%@", "[RoomDelegate] roomDidConnect")
+    }
+
+    func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
+        NSLog("%@", "[RoomDelegate] room didDisconnectWithError")
+    }
+
+    func room(_ room: Room, didUpdateConnectionState connectionState: ConnectionState, from oldConnectionState: ConnectionState) {
+        NSLog("%@", "[RoomDelegate] room didUpdateConnectionState: \(oldConnectionState) -> \(connectionState)")
 
         Task { @MainActor in
 
@@ -182,6 +292,10 @@ extension RoomViewController: RoomDelegate {
         Task { @MainActor in
             await setParticipants()
         }
+    }
+
+    func room(_ room: Room, participant: Participant, didUpdateConnectionQuality quality: ConnectionQuality) {
+        NSLog("%@", "[RoomDelegate] room didUpdateConnectionQuality: \(quality)")
     }
 }
 
